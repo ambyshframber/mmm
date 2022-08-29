@@ -13,7 +13,7 @@ pub struct MidiIn {
 }
 impl MidiIn {
     pub fn new(idx: usize, id: Id) -> Result<MidiIn> {
-        let name = id.to_string();
+        let name = format!("input id {}", id);
         let buf = Arc::new(Mutex::new(Vec::new()));
 
         let input = MidiInput::new(CLIENT_NAME)?;
@@ -37,7 +37,8 @@ impl MidiIO for MidiIn {
     fn can_read(&self) -> bool { true }
     fn can_write(&self) -> bool { false }
 
-    fn get_name(&self) -> String { format!("{} -> {}", self.port_name, self.name)}
+    fn get_display_name(&self) -> String { format!("{} -> {}", self.port_name, self.name)}
+    fn get_name(&self) -> String { self.name.clone() }
     fn set_name(&mut self, name: &str) { self.name = name.into() }
 
     fn list_outputs(&self) -> &[Id] { &self.outputs }
@@ -70,10 +71,10 @@ pub struct MidiOut {
 }
 impl MidiOut {
     pub fn new(id: Id) -> Result<MidiOut> {
-        let name = id.to_string();
+        let name = format!("output id {}", id);
 
         let output = MidiOutput::new(CLIENT_NAME)?;
-        let port = output.create_virtual(&format!("output id {}", id))?;
+        let port = output.create_virtual(&name)?;
 
         Ok(MidiOut {
             port, name

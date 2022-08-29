@@ -4,6 +4,7 @@ use connection::*;
 use shell::*;
 use std::sync::{Arc, Mutex};
 use shell_words::split;
+use consts::*;
 
 mod utils;
 mod connection;
@@ -74,10 +75,49 @@ impl MidiManager {
     }
     fn do_command(&mut self, command: &str) {
         if let Ok(parts) = split(command) {
-            
+            if let Some(idx) = shortened_keyword_match(&parts[0], commands::KWDS) {
+                match idx {
+                    commands::IDX_EXIT => panic!(), // lol
+                    commands::IDX_LIST => self.list(),
+                    commands::IDX_RENAME => self.rename(&parts[1..]),
+                    _ => unreachable!()
+                }
+            }
         }
         let mut msgr = self.msgr.lock().unwrap();
         msgr.shell_wait = false;
+    }
+
+    fn list(&self) {
+        for (id, vp) in &self.map {
+            println!("{}: {}", id, vp.get_display_name())
+        }
+    }
+    fn find_by_id_or_name(&self, needle: &str) -> Option<Id> {
+        if let Ok(id) = needle.parse() {
+            if self.map.contains_key(&id) {
+                return Some(id);
+            }
+        }
+        else {
+            let (ids, names): (Vec<Id>, Vec<String>) = self.map.iter().map(|(id, vp)| (id, vp.get_name())).unzip();
+            if let Some(idx) = shortened_keyword_match(needle, names) {
+                return Some(ids[idx])
+            }
+        }
+        println!("could not find processor {}", needle);
+        None
+    }
+    fn rename(&mut self, args: &[String]) {
+        if args.len() != 2 {
+            println!("rename command requires 2 arguments")
+        }
+        else {
+            if let Some(id) = self.find_by_id_or_name(&args[0]) {
+                let vp = self.map.get_mut(&id).unwrap();
+                vp.set_name(&args[1])
+            }
+        }
     }
 
     pub fn test(&mut self) {
@@ -107,6 +147,7 @@ trait MidiIO {
     fn list_outputs(&self) -> &[Id];
 
     fn get_name(&self) -> String;
+    fn get_display_name(&self) -> String { self.get_name() }
     fn set_name(&mut self, name: &str);
 
     fn control(&mut self, command: &str) -> String;
