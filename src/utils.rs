@@ -1,6 +1,8 @@
 use std::iter::IntoIterator;
 use thiserror::Error;
 use midir::*;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub const CLIENT_NAME: &str = "MidiMappingManager";
 
@@ -32,29 +34,9 @@ where T: IntoIterator<Item = S>, S: AsRef<str> {
         None
     }
 }
-const fn const_search(needle: &str, haystack: &[&str]) -> usize {
-    let mut result = 0;
-    let x = needle.as_bytes();
-    
-    loop {
-        if result > haystack.len() {
-            panic!("const search failed!")
-        }
-        let y = haystack[result].as_bytes();
-        if x.len() == y.len() {
-            let mut i = 0;
-            while i < x.len() {
-                if x[i] != y[i] {
-                    result += 1;
-                    continue;
-                }
-                i += 1;
-            }
-            break;
-        }
-    }
-    
-    result
+
+pub fn sleep_ms(ms: u64) {
+    sleep(Duration::from_millis(ms))
 }
 
 pub fn push_if_not_present<T>(val: T, vec: &mut Vec<T>)

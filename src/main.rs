@@ -1,9 +1,14 @@
 use std::collections::HashMap;
 use utils::*;
 use connection::*;
+use shell::*;
+use std::sync::{Arc, Mutex};
+use shell_words::split;
 
 mod utils;
 mod connection;
+mod shell;
+mod consts;
 
 fn main() {
     let mut mm = MidiManager::new();
@@ -13,14 +18,17 @@ fn main() {
 struct MidiManager {
     map: HashMap<Id, Box<dyn MidiIO>>,
     id_ctr: Id,
-    returned_ids: Vec<Id>
+    returned_ids: Vec<Id>,
+    msgr: Arc<Mutex<Messenger>>
 }
 impl MidiManager {
     pub fn new() -> MidiManager {
+        let msgr = Shell::new();
         MidiManager {
             map: HashMap::new(),
             id_ctr: 0,
-            returned_ids: Vec::new()
+            returned_ids: Vec::new(),
+            msgr
         }
     }
     fn next_id(&mut self) -> Id {
@@ -48,7 +56,8 @@ impl MidiManager {
         self.map.insert(id, out);
         Ok(id)
     }
-    fn clock(&mut self) {
+    fn update_map(&mut self) {
+        //sleep_ms(1);
         let all_ids: Vec<Id> = self.map.keys().map(|id| *id).collect();
         for id in all_ids {
             let vp = self.map.get_mut(&id).unwrap();
@@ -63,6 +72,13 @@ impl MidiManager {
             }
         }
     }
+    fn do_command(&mut self, command: &str) {
+        if let Ok(parts) = split(command) {
+            
+        }
+        let mut msgr = self.msgr.lock().unwrap();
+        msgr.shell_wait = false;
+    }
 
     pub fn test(&mut self) {
         let in_id = self.new_in(1).unwrap();
@@ -71,7 +87,13 @@ impl MidiManager {
         let in_ = self.map.get_mut(&in_id).unwrap();
         in_.add_output(out_id);
         loop {
-            self.clock()
+            self.update_map();
+            let mut msgr = self.msgr.lock().unwrap();
+            let msg = msgr.read_message();
+            drop(msgr);
+            if let Some(cmd) = msg {
+                self.do_command(&cmd)
+            }
         }
     }
 }

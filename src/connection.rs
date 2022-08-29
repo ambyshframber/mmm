@@ -73,7 +73,7 @@ impl MidiOut {
         let name = id.to_string();
 
         let output = MidiOutput::new(CLIENT_NAME)?;
-        let port = output.create_virtual(&format!("mmm {}", id))?;
+        let port = output.create_virtual(&format!("output id {}", id))?;
 
         Ok(MidiOut {
             port, name
