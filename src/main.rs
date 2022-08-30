@@ -1,19 +1,18 @@
 use std::collections::HashMap;
 use utils::*;
-use connection::*;
 use shell::*;
 use std::sync::{Arc, Mutex};
 use shell_words::split;
 use consts::*;
 
 mod utils;
-mod connection;
+mod processors;
 mod shell;
 mod consts;
 
 fn main() {
     let mut mm = MidiManager::new();
-    mm.test()
+    mm.run()
 }
 
 struct MidiManager {
@@ -32,6 +31,18 @@ impl MidiManager {
             msgr
         }
     }
+    pub fn run(&mut self) {
+        loop {
+            self.update_map();
+            let mut msgr = self.msgr.lock().unwrap();
+            let msg = msgr.read_message();
+            drop(msgr);
+            if let Some(cmd) = msg {
+                self.do_command(&cmd)
+            }
+        }
+    }
+
     fn next_id(&mut self) -> Id {
         if let Some(i) = self.returned_ids.pop() {
             i
@@ -45,18 +56,7 @@ impl MidiManager {
             i
         }
     }
-    fn new_in(&mut self, idx: usize) -> Result<Id> {
-        let id = self.next_id();
-        let in_ = Box::new(MidiIn::new(idx, id)?);
-        self.map.insert(id, in_);
-        Ok(id)
-    }
-    fn new_out(&mut self) -> Result<Id> {
-        let id = self.next_id();
-        let out = Box::new(MidiOut::new(id)?);
-        self.map.insert(id, out);
-        Ok(id)
-    }
+    
     fn update_map(&mut self) {
         //sleep_ms(1);
         let all_ids: Vec<Id> = self.map.keys().map(|id| *id).collect();
@@ -75,11 +75,13 @@ impl MidiManager {
     }
     fn do_command(&mut self, command: &str) {
         if let Ok(parts) = split(command) {
-            if let Some(idx) = shortened_keyword_match(&parts[0], commands::KWDS) {
+            use commands::*;
+            if let Some(idx) = shortened_keyword_match(&parts[0], COMMANDS) {
                 match idx {
-                    commands::IDX_EXIT => panic!(), // lol
-                    commands::IDX_LIST => self.list(),
-                    commands::IDX_RENAME => self.rename(&parts[1..]),
+                    IDX_EXIT => panic!(), // lol
+                    IDX_LIST | IDX_LS => self.list(),
+                    IDX_RENAME => self.rename(&parts[1..]),
+                    IDX_INIT | IDX_NEW => self.new_vp(&parts[1..]),
                     _ => unreachable!()
                 }
             }
@@ -88,6 +90,20 @@ impl MidiManager {
         msgr.shell_wait = false;
     }
 
+    fn new_vp(&mut self, args: &[String]) {
+        if let Some(idx) = shortened_keyword_match(&args[0], consts::processors::PROCESSORS) {
+            match consts::processor_ctors::PROCESSOR_CTORS[idx](args[1].clone(), &args[2..]) {
+                Ok(vp) => {
+                    let id = self.next_id();
+                    self.map.insert(id, vp);
+                }
+                Err(e) => println!("failed to create processor: {:?}", e)
+            }
+        }
+        else {
+            println!("no match for {}", args[0])
+        }
+    }
     fn list(&self) {
         for (id, vp) in &self.map {
             println!("{}: {}", id, vp.get_display_name())
@@ -120,25 +136,10 @@ impl MidiManager {
         }
     }
 
-    pub fn test(&mut self) {
-        let in_id = self.new_in(1).unwrap();
-        let out_id = self.new_out().unwrap();
 
-        let in_ = self.map.get_mut(&in_id).unwrap();
-        in_.add_output(out_id);
-        loop {
-            self.update_map();
-            let mut msgr = self.msgr.lock().unwrap();
-            let msg = msgr.read_message();
-            drop(msgr);
-            if let Some(cmd) = msg {
-                self.do_command(&cmd)
-            }
-        }
-    }
 }
 
-trait MidiIO {
+pub trait MidiIO {
     fn can_read(&self) -> bool;
     fn can_write(&self) -> bool;
 
@@ -154,4 +155,6 @@ trait MidiIO {
     
     fn write(&mut self, messages: &[MidiMessage]);
     fn read(&mut self) -> Vec<MidiMessage>;
+
+    fn delete(self);
 }

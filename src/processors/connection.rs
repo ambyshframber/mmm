@@ -12,8 +12,7 @@ pub struct MidiIn {
     outputs: Vec<Id>
 }
 impl MidiIn {
-    pub fn new(idx: usize, id: Id) -> Result<MidiIn> {
-        let name = format!("input id {}", id);
+    fn new(idx: usize, name: String) -> Result<MidiIn> {
         let buf = Arc::new(Mutex::new(Vec::new()));
 
         let input = MidiInput::new(CLIENT_NAME)?;
@@ -31,6 +30,16 @@ impl MidiIn {
             _connection, buf, name, port_name,
             outputs: Vec::new()
         })
+    }
+
+    pub fn new_args(name: String, args: &[String]) -> Result<Box<dyn MidiIO>> {
+        if args.len() != 1 {
+            Err(MMMErr::ArgError)
+        }
+        else {
+            let idx = args[0].parse()?;
+            Self::new(idx, name).map(|m| Box::new(m) as Box<dyn MidiIO>)
+        }
     }
 }
 impl MidiIO for MidiIn {
@@ -57,6 +66,10 @@ impl MidiIO for MidiIn {
         let mut buf = self.buf.lock().unwrap();
         replace(&mut *buf, replacement)
     }
+    
+    fn delete(self) {
+        self._connection.close();
+    }
 }
 fn process_msg(ts: u64, bytes: &[u8], buf: &mut MessageBuf) {
     if let Some(msg) = MidiMessage::from_slice(ts, bytes) {
@@ -70,8 +83,7 @@ pub struct MidiOut {
     name: String,
 }
 impl MidiOut {
-    pub fn new(id: Id) -> Result<MidiOut> {
-        let name = format!("output id {}", id);
+    fn new(name: String) -> Result<MidiOut> {
 
         let output = MidiOutput::new(CLIENT_NAME)?;
         let port = output.create_virtual(&name)?;
@@ -79,6 +91,9 @@ impl MidiOut {
         Ok(MidiOut {
             port, name
         })
+    }
+    pub fn new_args(name: String, _args: &[String]) -> Result<Box<dyn MidiIO>> {
+        Self::new(name).map(|m| Box::new(m) as Box<dyn MidiIO>)
     }
 }
 impl MidiIO for MidiOut {
@@ -100,4 +115,6 @@ impl MidiIO for MidiOut {
         }
     }
     fn read(&mut self) -> Vec<MidiMessage> { unreachable!() }
+
+    fn delete(self) {}
 }

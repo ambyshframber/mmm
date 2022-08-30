@@ -3,6 +3,7 @@ use thiserror::Error;
 use midir::*;
 use std::thread::sleep;
 use std::time::Duration;
+use std::num::ParseIntError;
 
 pub const CLIENT_NAME: &str = "MidiMappingManager";
 
@@ -59,6 +60,10 @@ pub enum MMMErr {
     OutputFailure(#[from] ConnectError<MidiOutput>),
     #[error("port information failure")]
     PortInfoFailure(#[from] PortInfoError),
+    #[error("argument error")]
+    ArgError,
+    #[error("parse error")]
+    ParseError(#[from] ParseIntError),
 }
 
 #[derive(Clone)]
@@ -122,6 +127,16 @@ impl MidiMessage {
                 _ => unreachable!()
             }
             ret
+        }
+    }
+
+    /// returns None for non-channel message. goes by midi channel number, not binary value (the lowest channel is 1)
+    pub fn channel(&self) -> Option<u8> {
+        type MMK = MidiMessageKind;
+        match self.data {
+            MMK::SystemCommon(_) | MMK::SystemRealtime(_) => None,
+            MMK::Channel(b) => Some((b[0] & 0xf) + 1),
+            MMK::ChannelSmall(b) => Some((b[0] & 0xf) + 1),
         }
     }
 }
