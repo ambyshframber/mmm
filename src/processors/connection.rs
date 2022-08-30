@@ -46,7 +46,7 @@ impl MidiIO for MidiIn {
     fn can_read(&self) -> bool { true }
     fn can_write(&self) -> bool { false }
 
-    fn get_display_name(&self) -> String { format!("{} -> {}", self.port_name, self.name)}
+    fn get_display_name(&self) -> String { format!("{} -> {} (input)", self.port_name, self.name)}
     fn get_name(&self) -> String { self.name.clone() }
     fn set_name(&mut self, name: &str) { self.name = name.into() }
 
@@ -101,6 +101,7 @@ impl MidiIO for MidiOut {
     fn can_write(&self) -> bool { true }
 
     fn get_name(&self) -> String { format!("{}", self.name)}
+    fn get_display_name(&self) -> String { format!("{} (output)", self.name)}
     fn set_name(&mut self, name: &str) { self.name = name.into() }
 
     fn list_outputs(&self) -> &[Id] { unreachable!() }

@@ -30,6 +30,7 @@ impl MidiIO for ChannelFilter {
     fn can_write(&self) -> bool { true }
 
     fn get_name(&self) -> String { self.name.clone() }
+    fn get_display_name(&self) -> String { format!("{} (channelfilter)", self.name) }
     fn set_name(&mut self, name: &str) { self.name = name.into() }
 
     fn list_outputs(&self) -> &[Id] { &self.outputs }
@@ -44,7 +45,7 @@ impl MidiIO for ChannelFilter {
 
     fn write(&mut self, messages: &[MidiMessage]) {
         self.buf.extend(messages.iter().skip_while(|m| {
-            m.channel().map(|c| c == self.channel).unwrap_or(true)
+            m.channel().map(|c| c != self.channel).unwrap_or(false)
         }).map(|m| m.clone()))
     }
     fn read(&mut self) -> Vec<MidiMessage> {

@@ -42,7 +42,7 @@ pub fn sleep_ms(ms: u64) {
 
 pub fn push_if_not_present<T>(val: T, vec: &mut Vec<T>)
 where T: PartialEq {
-    if vec.iter().any(|v| *v == val ) {
+    if !vec.iter().any(|v| *v == val ) {
         vec.push(val)
     }
 }
@@ -134,10 +134,10 @@ impl MidiMessage {
     pub fn channel(&self) -> Option<u8> {
         type MMK = MidiMessageKind;
         match self.data {
-            MMK::SystemCommon(_) | MMK::SystemRealtime(_) => None,
-            MMK::Channel(b) => Some((b[0] & 0xf) + 1),
-            MMK::ChannelSmall(b) => Some((b[0] & 0xf) + 1),
-        }
+            MMK::Channel(b) => Some(b[0]),
+            MMK::ChannelSmall(b) => Some(b[0]),
+            _ => None
+        }.map(|b| (b & 0xf) + 1)
     }
 }
 

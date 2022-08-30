@@ -1,15 +1,17 @@
 pub mod commands {
-	pub const COMMANDS: &[&str] = &["exit", "list", "ls", "rename", "connect", "cfg", "init", "new", "remove", "inputs"];
+	pub const COMMANDS: &[&str] = &["exit", "list", "ls", "rename", "connect", "disconnect", "cfg", "init", "new", "remove", "inputs", "outputs"];
 	pub const IDX_EXIT: usize = 0;
 	pub const IDX_LIST: usize = 1;
 	pub const IDX_LS: usize = 2;
 	pub const IDX_RENAME: usize = 3;
 	pub const IDX_CONNECT: usize = 4;
-	pub const IDX_CFG: usize = 5;
-	pub const IDX_INIT: usize = 6;
-	pub const IDX_NEW: usize = 7;
-	pub const IDX_REMOVE: usize = 8;
-	pub const IDX_INPUTS: usize = 9;
+	pub const IDX_DISCONNECT: usize = 5;
+	pub const IDX_CFG: usize = 6;
+	pub const IDX_INIT: usize = 7;
+	pub const IDX_NEW: usize = 8;
+	pub const IDX_REMOVE: usize = 9;
+	pub const IDX_INPUTS: usize = 10;
+	pub const IDX_OUTPUTS: usize = 11;
 }
 
 pub mod processors {

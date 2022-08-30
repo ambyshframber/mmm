@@ -5,11 +5,12 @@ kwds_main = [
         "exit",
         "list", "ls",
         "rename",
-        "connect",
+        "connect", "disconnect",
         "cfg",
         "init", "new",
         "remove",
         "inputs",
+        "outputs"
     ]),
 
     ("processors", [
