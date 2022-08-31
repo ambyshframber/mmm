@@ -15,13 +15,14 @@ pub mod commands {
 }
 
 pub mod processors {
-	pub const PROCESSORS: &[&str] = &["input", "output", "channelfilter"];
+	pub const PROCESSORS: &[&str] = &["input", "output", "channelfilter", "channelmerge"];
 	pub const IDX_INPUT: usize = 0;
 	pub const IDX_OUTPUT: usize = 1;
 	pub const IDX_CHANNELFILTER: usize = 2;
+	pub const IDX_CHANNELMERGE: usize = 3;
 }
 
 pub mod processor_ctors {
-	pub const PROCESSOR_CTORS: &[fn(String, &[String]) -> crate::utils::Result<Box<dyn crate::MidiIO>>] = &[crate::processors::connection::MidiIn::new_args, crate::processors::connection::MidiOut::new_args, crate::processors::channelfilter::ChannelFilter::new_args, ];
+	pub const PROCESSOR_CTORS: &[fn(String, &[String]) -> crate::utils::Result<Box<dyn crate::MidiIO>>] = &[crate::processors::connection::MidiIn::new_args, crate::processors::connection::MidiOut::new_args, crate::processors::channelfilter::ChannelFilter::new_args, crate::processors::channelmerge::ChannelMerge::new_args, ];
 }
 

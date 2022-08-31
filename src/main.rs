@@ -12,7 +12,7 @@ mod shell;
 mod consts;
 
 fn main() {
-    let mut mm = MidiManager::new();
+    let mm = MidiManager::new();
     mm.run()
 }
 
@@ -20,28 +20,33 @@ struct MidiManager {
     map: HashMap<Id, Box<dyn MidiIO>>,
     id_ctr: Id,
     returned_ids: Vec<Id>,
-    msgr: Arc<Mutex<Messenger>>
+    msgr: Arc<Mutex<Messenger>>,
+    shell_thread: std::thread::JoinHandle<()>
 }
 impl MidiManager {
     pub fn new() -> MidiManager {
-        let msgr = Shell::new();
+        let (msgr, shell_thread) = Shell::new();
         MidiManager {
             map: HashMap::new(),
             id_ctr: 0,
             returned_ids: Vec::new(),
-            msgr
+            msgr,
+            shell_thread
         }
     }
-    pub fn run(&mut self) {
+    pub fn run(mut self) {
         loop {
             self.update_map();
             let mut msgr = self.msgr.lock().unwrap();
             let msg = msgr.read_message();
             drop(msgr);
             if let Some(cmd) = msg {
-                self.do_command(&cmd)
+                if self.do_command(&cmd) {
+                    break
+                }
             }
         }
+        self.shell_thread.join().unwrap();
     }
 
     fn next_id(&mut self) -> Id {
@@ -76,12 +81,13 @@ impl MidiManager {
             }
         }
     }
-    fn do_command(&mut self, command: &str) {
+    fn do_command(&mut self, command: &str) -> bool {
+        let mut exiting = false;
         if let Ok(parts) = split(command) {
             use commands::*;
             if let Some(idx) = shortened_keyword_match(&parts[0], COMMANDS) {
                 match idx {
-                    IDX_EXIT => panic!(), // lol
+                    IDX_EXIT => exiting = true, // lol
 
                     IDX_LIST | IDX_LS => self.list(),
                     IDX_RENAME => self.rename(&parts[1..]),
@@ -102,7 +108,9 @@ impl MidiManager {
             }
         }
         let mut msgr = self.msgr.lock().unwrap();
+        msgr.exiting = exiting;
         msgr.shell_wait = false;
+        exiting
     }
 
     fn outputs(&mut self, args: &[String]) {

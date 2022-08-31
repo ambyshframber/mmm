@@ -16,12 +16,14 @@ kwds_main = [
     ("processors", [
         "input", "output",
         "channelfilter",
+        "channelmerge",
     ]),
 
     (["processor_ctors", "&[fn(String, &[String]) -> crate::utils::Result<Box<dyn crate::MidiIO>>]"], [
         "crate::processors::connection::MidiIn::new_args",
         "crate::processors::connection::MidiOut::new_args",
         "crate::processors::channelfilter::ChannelFilter::new_args",
+        "crate::processors::channelmerge::ChannelMerge::new_args",
     ]),
 ]
 

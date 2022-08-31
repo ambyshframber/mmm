@@ -5,12 +5,14 @@ use crate::utils::*;
 
 pub struct Messenger {
     pub shell_wait: bool,
+    pub exiting: bool,
     command: Option<String>
 }
 impl Messenger {
     pub fn new() -> Messenger {
         Messenger {
             shell_wait: false,
+            exiting: false,
             command: None
         }
     }
@@ -23,20 +25,22 @@ impl Messenger {
     }
 }
 pub struct Shell {
-    msgr: Arc<Mutex<Messenger>>
+    msgr: Arc<Mutex<Messenger>>,
+    rl: Editor<()>
 }
 impl Shell {
-    pub fn new() -> Arc<Mutex<Messenger>> {
+    pub fn new() -> (Arc<Mutex<Messenger>>, std::thread::JoinHandle<()>) {
         let msgr = Arc::new(Mutex::new(Messenger::new()));
         let msgr_ret = Arc::clone(&msgr);
 
         let mut shell = Shell {
-            msgr
+            msgr,
+            rl: Editor::new().unwrap()
         };
 
-        let _thread = spawn(move || shell.run());
+        let thread = spawn(move || shell.run());
 
-        msgr_ret
+        (msgr_ret, thread)
     }
     pub fn run(&mut self) {
         loop {
@@ -45,10 +49,12 @@ impl Shell {
             if msgr.shell_wait {
                 continue
             }
+            if msgr.exiting {
+                break
+            }
             else {
                 std::mem::drop(msgr);
-                let mut editor: Editor<()> = Editor::new().unwrap();
-                if let Ok(line) = editor.readline("> ") {
+                if let Ok(line) = self.rl.readline("> ") {
                     if line.is_empty() {
                         continue
                     }

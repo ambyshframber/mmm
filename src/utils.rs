@@ -66,12 +66,12 @@ pub enum MMMErr {
     ParseError(#[from] ParseIntError),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MidiMessage {
     ts: u64,
     data: MidiMessageKind
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum MidiMessageKind {
     Channel([u8; 3]), // always the same length
     ChannelSmall([u8; 2]),
@@ -139,6 +139,32 @@ impl MidiMessage {
             _ => None
         }.map(|b| (b & 0xf) + 1)
     }
+    /// goes by midi channel number, not binary value (the lowest channel is 1)
+    pub fn with_channel(&self, channel: u8) -> MidiMessage {
+        assert!((1..=16).contains(&channel));
+        let mut ret = self.clone();
+        ret.data = ret.data.with_channel(channel);
+        ret
+    }
+}
+impl MidiMessageKind {
+    pub fn with_channel(self, channel: u8) -> MidiMessageKind {
+        match self {
+            Self::Channel(mut b) => {
+                let c_actual = channel - 1;
+                b[0] &= 0xf0;
+                b[0] |= c_actual;
+                Self::Channel(b)
+            }
+            Self::ChannelSmall(mut b) => {
+                let c_actual = channel - 1;
+                b[0] &= 0xf0;
+                b[0] |= c_actual;
+                Self::ChannelSmall(b)
+            }
+            _ => self
+        }
+    }
 }
 
 #[cfg(test)]
@@ -154,5 +180,13 @@ mod tests {
         assert_eq!(shortened_keyword_match("d", KEYWORDS), Some(1));
         assert_eq!(shortened_keyword_match("r", KEYWORDS), Some(3));
         assert_eq!(shortened_keyword_match("a", KEYWORDS), None);
+    }
+
+    #[test]
+    fn midi_channels() {
+        let m = MidiMessage::from_slice(0, &[0b1001_0000, 69, 69]).unwrap();
+        assert_eq!(m.channel(), Some(1));
+        assert_eq!(m.with_channel(8).channel(), Some(8));
+        
     }
 }
