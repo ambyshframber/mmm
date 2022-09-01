@@ -14,6 +14,11 @@ pub mod commands {
 	pub const IDX_OUTPUTS: usize = 11;
 }
 
+pub mod metacommands {
+	pub const METACOMMANDS: &[&str] = &["load"];
+	pub const IDX_LOAD: usize = 0;
+}
+
 pub mod processors {
 	pub const PROCESSORS: &[&str] = &["input", "output", "channelfilter", "channelmerge"];
 	pub const IDX_INPUT: usize = 0;

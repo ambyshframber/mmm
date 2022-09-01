@@ -13,6 +13,10 @@ kwds_main = [
         "outputs"
     ]),
 
+    ("metacommands", [
+        "load"
+    ]),
+
     ("processors", [
         "input", "output",
         "channelfilter",

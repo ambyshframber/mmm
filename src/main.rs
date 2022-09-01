@@ -91,7 +91,10 @@ impl MidiManager {
 
                     IDX_LIST | IDX_LS => self.list(),
                     IDX_RENAME => self.rename(&parts[1..]),
+
                     IDX_INIT | IDX_NEW => self.new_vp(&parts[1..]),
+                    IDX_REMOVE => self.remove(&parts[1..]),
+
                     IDX_CONNECT => self.connect(&parts[1..], false),
                     IDX_DISCONNECT => self.connect(&parts[1..], true),
 
@@ -113,6 +116,19 @@ impl MidiManager {
         exiting
     }
 
+    fn remove(&mut self, args: &[String]) {
+        if args.len() != 1 {
+            println!("remove command requires 1 argument")
+        }
+        else {
+            if let Some(id) = self.find_by_id_or_name(&args[0]) {
+                self.map.remove(&id);
+                for (_, vp) in self.map.iter_mut() {
+                    vp.rem_output(id)
+                }
+            }
+        }
+    }
     fn outputs(&mut self, args: &[String]) {
         if args.len() != 1 {
             println!("outputs command requires 1 argument")

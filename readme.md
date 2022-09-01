@@ -8,7 +8,7 @@ i thought it would be fun to make a midi patchbay entirely in a cli. so that's w
 
 mmm consists of a map of "virtual processors" linked together. any processor (barring those send midi out of the application) can have zero to infinite outputs. any processor (barring those which take midi from outside the application) can have any number of inputs. all processors have a numeric id and a string name.
 
-currently there are 3 processors:
+currently there are 4 processors:
 
 ### input
 connects to and takes midi from an external port. takes 1 argument (an port index) on initialisation
@@ -19,9 +19,12 @@ provides a virtual port that other applications can connect to
 ### channelfilter
 filters out messages on all but one channel. system global and realtime messages are passed through. takes 1 argument (a channel) on initialisation
 
+### channelmerge
+sends all messages to one channel. system global and realtime messages are passed through. takes 1 argument (a channel) on initialisation
+
 ## how to use
 
-mmm uses an interactive shell as an interface. valid commands are:
+mmm uses an interactive shell as an interface. commands prefixed with `.` are metacommands (see "metacommands" section). valid commands are:
 
 ### exit
 exits the application by means of a panic (i'll fix it later)
@@ -45,12 +48,12 @@ disconnect two processors. processors can be referred to by numeric id or name.
 send a command to a processor.
 
 ### init TYPE NAME \[ARGS...\]
-create a new processor.
+create a new processor. all arguments after name are passed through to the processor.
 
 ### new
 alias for init
 
-### remove (not yet implemented)
+### remove NAME_OR_ID
 remove a processor.
 
 ### inputs
@@ -59,9 +62,16 @@ list all external ports available for connection.
 ### outputs ID_OR_NAME
 list all outputs of a given processor.
 
+## metacommands
+
+metacommands are commands used to run other commands. currently only `.load` exists. metacommands may be nested.
+
+### .load FILE
+load a file and run all its lines as commands.
+
 ## other bits
 
-any string value can be referred to by a shortened name so long as it is unambiguous. for example, `e` will work in place of `exit`, but `c` will not, because it could mean connect or cfg. the same is true of processor names and processor types.
+any string value can be referred to by a shortened name so long as it is unambiguous. for example, `e` will work because it's short for `exit`, but `c` will not, because it could mean connect or cfg. the same is true of processor names and processor types.
 
 ## what is gen_consts.py for
 
