@@ -3,7 +3,7 @@ use std::thread;
 use std::collections::VecDeque;
 use std::fs::read_to_string;
 use std::process::Command;
-use rustyline::Editor;
+use rustyline::{Editor, Helper, completion::{FilenameCompleter, Completer, Pair}, hint::Hinter, highlight::Highlighter, validate::Validator};
 use shell_words::split;
 use crate::utils::*;
 use crate::consts::metacommands::*;
@@ -29,9 +29,37 @@ impl Messenger {
         self.command.take()
     }
 }
+struct Complete {
+    fc: FilenameCompleter
+}
+impl Complete {
+    pub fn new() -> Complete {
+        Complete {
+            fc: FilenameCompleter::new()
+        }
+    }
+}
+impl Helper for Complete {}
+impl Completer for Complete {
+    type Candidate = Pair;
+    fn complete(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
+        if line.starts_with('.') {
+            self.fc.complete(line, pos, ctx)
+        }
+        else {
+            Ok((0, Vec::new()))
+        }
+    }
+}
+impl Validator for Complete {}
+impl Hinter for Complete {
+    type Hint = String;
+}
+impl Highlighter for Complete {}
+
 pub struct Shell {
     msgr: Arc<Mutex<Messenger>>,
-    rl: Editor<()>,
+    rl: Editor<Complete>,
     int_buf: VecDeque<String>
 }
 impl Shell {
@@ -39,9 +67,12 @@ impl Shell {
         let msgr = Arc::new(Mutex::new(Messenger::new()));
         let msgr_ret = Arc::clone(&msgr);
 
+        let mut rl = Editor::new().unwrap();
+        let h = Complete::new();
+        rl.set_helper(Some(h));
+
         let mut shell = Shell {
-            msgr,
-            rl: Editor::new().unwrap(),
+            msgr, rl,
             int_buf: VecDeque::new()
         };
 

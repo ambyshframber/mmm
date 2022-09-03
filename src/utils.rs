@@ -66,6 +66,7 @@ pub enum MMMErr {
     ParseError(#[from] ParseIntError),
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct MidiMessage {
     ts: u64,
