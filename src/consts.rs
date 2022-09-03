@@ -15,8 +15,9 @@ pub mod commands {
 }
 
 pub mod metacommands {
-	pub const METACOMMANDS: &[&str] = &["load"];
+	pub const METACOMMANDS: &[&str] = &["load", "run"];
 	pub const IDX_LOAD: usize = 0;
+	pub const IDX_RUN: usize = 1;
 }
 
 pub mod processors {

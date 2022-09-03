@@ -69,6 +69,9 @@ metacommands are commands used to run other commands. currently only `.load` exi
 ### .load FILE
 load a file and run all its lines as commands.
 
+### .run COMMAND \[ARGS...\]
+run a command and run each line of output as a command.
+
 ## other bits
 
 any string value can be referred to by a shortened name so long as it is unambiguous. for example, `e` will work because it's short for `exit`, but `c` will not, because it could mean connect or cfg. the same is true of processor names and processor types.

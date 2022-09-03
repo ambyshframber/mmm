@@ -14,7 +14,8 @@ kwds_main = [
     ]),
 
     ("metacommands", [
-        "load"
+        "load",
+        "run"
     ]),
 
     ("processors", [

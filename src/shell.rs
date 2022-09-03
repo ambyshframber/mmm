@@ -2,6 +2,7 @@ use std::sync::{Mutex, Arc};
 use std::thread;
 use std::collections::VecDeque;
 use std::fs::read_to_string;
+use std::process::Command;
 use rustyline::Editor;
 use shell_words::split;
 use crate::utils::*;
@@ -89,7 +90,14 @@ impl Shell {
             if let Some(idx) = shortened_keyword_match(command, METACOMMANDS) {
                 match idx {
                     IDX_LOAD => self.load(args),
+                    IDX_RUN => self.run_mc(args),
                     _ => unreachable!()
+                }
+            }
+            else {
+                println!("command not found! valid metacommands are:");
+                for c in METACOMMANDS {
+                    println!("\t{}", c)
                 }
             }
         }
@@ -101,6 +109,27 @@ impl Shell {
         }
     }
 
+    fn run_mc(&mut self, args: &[String]) {
+        if args.is_empty() {
+            println!("run metacommand requires at least 1 argument")
+        }
+        else {
+            if let Ok(output) = Command::new(&args[0]).args(&args[1..]).output() {
+                println!("{}", String::from_utf8_lossy(&output.stderr));
+                if let Ok(s) = std::str::from_utf8(&output.stdout) {    
+                    for line in s.split('\n') {
+                        self.do_line(line.into());
+                    }
+                }
+                else {
+                    println!("command returned invalid utf8")
+                }
+            }
+            else {
+                println!("failed to run command!")
+            }
+        }
+    }
     fn load(&mut self, args: &[String]) {
         if args.len() != 1 {
             println!("load metacommand requires 1 argument")
