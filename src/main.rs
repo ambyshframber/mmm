@@ -4,6 +4,8 @@ use shell::*;
 use std::sync::{Arc, Mutex};
 use shell_words::split;
 use consts::*;
+use lazy_static::{lazy_static, initialize};
+use std::time::Instant;
 
 mod utils;
 mod processors;
@@ -11,7 +13,12 @@ mod shell;
 #[allow(dead_code)]
 mod consts;
 
+lazy_static! {
+    pub static ref INIT_TIME: Instant = Instant::now();
+}
+
 fn main() {
+    initialize(&INIT_TIME);
     let mm = MidiManager::new();
     mm.run()
 }
@@ -87,7 +94,7 @@ impl MidiManager {
             use commands::*;
             if let Some(idx) = shortened_keyword_match(&parts[0], COMMANDS) {
                 match idx {
-                    IDX_EXIT => exiting = true, // lol
+                    IDX_EXIT => exiting = true,
 
                     IDX_LIST | IDX_LS => self.list(),
                     IDX_RENAME => self.rename(&parts[1..]),
@@ -97,6 +104,7 @@ impl MidiManager {
 
                     IDX_CONNECT => self.connect(&parts[1..], false),
                     IDX_DISCONNECT => self.connect(&parts[1..], true),
+                    IDX_CFG => self.cfg(&parts[1..]),
 
                     IDX_INPUTS => list_inputs(),
                     IDX_OUTPUTS => self.outputs(&parts[1..]),
@@ -116,6 +124,17 @@ impl MidiManager {
         exiting
     }
 
+    fn cfg(&mut self, args: &[String]) {
+        if args.len() < 1 {
+            println!("cfg command requires at least 1 argument")
+        }
+        else {
+            if let Some(id) = self.find_by_id_or_name(&args[0]) {
+                let vp = self.map.get_mut(&id).unwrap();
+                vp.cfg(args)
+            }
+        }
+    }
     fn remove(&mut self, args: &[String]) {
         if args.len() != 1 {
             println!("remove command requires 1 argument")
@@ -242,7 +261,7 @@ pub trait MidiIO {
     fn get_display_name(&self) -> String { self.get_name() }
     fn set_name(&mut self, name: &str);
 
-    fn control(&mut self, command: &str) -> String;
+    fn cfg(&mut self, command: &[String]);
     
     fn write(&mut self, messages: &[MidiMessage]);
     fn read(&mut self) -> Vec<MidiMessage>;

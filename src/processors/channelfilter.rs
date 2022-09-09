@@ -1,4 +1,5 @@
 use crate::utils::*;
+use crate::consts::channelfilter_cmds::*;
 use crate::MidiIO;
 
 pub struct ChannelFilter {
@@ -29,6 +30,20 @@ impl ChannelFilter {
             }
         }
     }
+
+    pub fn change_channel(&mut self, args: &[String]) {
+        if args.is_empty() {
+            println!("channel number required")
+        }
+        else {
+            if let Ok(channel) = args[0].parse() {
+                self.channel = channel
+            }
+            else {
+                println!("channel number failed to parse")
+            }
+        }
+    }
 }
 impl MidiIO for ChannelFilter {
     fn can_read(&self) -> bool { true }
@@ -46,7 +61,22 @@ impl MidiIO for ChannelFilter {
         self.outputs.iter().position(|i| *i == id).map(|idx| self.outputs.remove(idx));
     }
 
-    fn control(&mut self, _command: &str) -> String { unimplemented!() }
+    fn cfg(&mut self, command: &[String]) {
+        if !command.is_empty() {
+            println!("channelfilter on channel {}", self.channel)
+        }
+        else {
+            match shortened_keyword_match(&command[0], CHANNELFILTER_CMDS) {
+                Some(IDX_CHANNEL) => self.change_channel(&command[1..]),
+                _ => {
+                    println!("command not found! valid commands are:");
+                    for cmd in CHANNELFILTER_CMDS {
+                        println!("\t{}", cmd)
+                    }
+                }
+            }
+        }
+    }
 
     fn write(&mut self, messages: &[MidiMessage]) {
         self.buf.extend(messages.iter().skip_while(|m| {

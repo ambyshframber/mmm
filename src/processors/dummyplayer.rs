@@ -1,19 +1,20 @@
 use crate::utils::*;
 use crate::consts::channelfilter_cmds::*;
 use crate::MidiIO;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-pub struct ChannelMerge {
+pub struct DummyPlayer {
     channel: u8,
     name: String,
-    buf: Vec<MidiMessage>,
     outputs: Vec<Id>,
+    last_msg: u64
 }
-impl ChannelMerge {
-    fn new(channel: u8, name: String) -> ChannelMerge {
-        ChannelMerge {
+impl DummyPlayer {
+    fn new(channel: u8, name: String) -> DummyPlayer {
+        DummyPlayer {
             channel, name,
-            buf: Vec::new(),
-            outputs: Vec::new()
+            outputs: Vec::new(),
+            last_msg: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
         }
     }
     pub fn new_args(name: String, args: &[String]) -> Result<Box<dyn MidiIO>> {
@@ -45,12 +46,12 @@ impl ChannelMerge {
         }
     }
 }
-impl MidiIO for ChannelMerge {
+impl MidiIO for DummyPlayer {
     fn can_read(&self) -> bool { true }
-    fn can_write(&self) -> bool { true }
+    fn can_write(&self) -> bool { false }
 
     fn get_name(&self) -> String { self.name.clone() }
-    fn get_display_name(&self) -> String { format!("{} (channelmerge)", self.name) }
+    fn get_display_name(&self) -> String { format!("{} (dummyplayer)", self.name) }
     fn set_name(&mut self, name: &str) { self.name = name.into() }
 
     fn list_outputs(&self) -> &[Id] { &self.outputs }
@@ -63,7 +64,7 @@ impl MidiIO for ChannelMerge {
 
     fn cfg(&mut self, command: &[String]) {
         if !command.is_empty() {
-            println!("channelmerge on channel {}", self.channel)
+            println!("dummyplayer on channel {}", self.channel)
         }
         else {
             match shortened_keyword_match(&command[0], CHANNELFILTER_CMDS) {
@@ -76,14 +77,19 @@ impl MidiIO for ChannelMerge {
                 }
             }
         }
-    }
+    }    
 
-    fn write(&mut self, messages: &[MidiMessage]) {
-        self.buf.extend(messages.iter().map(|m| m.with_channel(self.channel)));
-    }
+    fn write(&mut self, _messages: &[MidiMessage]) { unreachable!() }
     fn read(&mut self) -> Vec<MidiMessage> {
-        let replacement = Vec::new();
-        std::mem::replace(&mut self.buf, replacement)
+        let mut ret = Vec::new();
+
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        if now > self.last_msg {
+            ret.push(MidiMessage::Channel([0x90 | self.channel, 0x40, 0x40]));
+            self.last_msg = now
+        }
+
+        ret
     }
     
     fn delete(self) { }

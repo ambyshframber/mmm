@@ -58,7 +58,7 @@ impl MidiIO for MidiIn {
         self.outputs.iter().position(|i| *i == id).map(|idx| self.outputs.remove(idx));
     }
 
-    fn control(&mut self, _command: &str) -> String { unimplemented!() }
+    fn cfg(&mut self, _command: &[String]) { println!("n/a") }
 
     fn write(&mut self, _messages: &[MidiMessage]) { unreachable!() }
     fn read(&mut self) -> Vec<MidiMessage> {
@@ -108,7 +108,7 @@ impl MidiIO for MidiOut {
     fn add_output(&mut self, _id: Id) { unreachable!() }
     fn rem_output(&mut self, _id: Id) { unreachable!() }
 
-    fn control(&mut self, _command: &str) -> String { unimplemented!() }
+    fn cfg(&mut self, _command: &[String]) { println!("n/a") }
 
     fn write(&mut self, messages: &[MidiMessage]) {
         for m in messages {

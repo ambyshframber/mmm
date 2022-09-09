@@ -68,33 +68,22 @@ pub enum MMMErr {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
-pub struct MidiMessage {
-    ts: u64,
-    data: MidiMessageKind
-}
-#[derive(Clone, Debug)]
-pub enum MidiMessageKind {
+pub enum MidiMessage {
     Channel([u8; 3]), // always the same length
     ChannelSmall([u8; 2]),
     SystemCommon(Vec<u8>), // less common, so the heap allocations are less of a hit
     SystemRealtime(u8) // always 1 byte
 }
 impl MidiMessage {
-    pub fn from_slice(ts: u64, bytes: &[u8]) -> Option<MidiMessage> {
+    pub fn from_slice(_ts: u64, bytes: &[u8]) -> Option<MidiMessage> {
         if bytes[0] < 0b1111_0000 { // channel message
             if bytes.len() == 3 {
                 let array = bytes.try_into().unwrap();
-                Some(MidiMessage {
-                    ts,
-                    data: MidiMessageKind::Channel(array)
-                })
+                Some(MidiMessage::Channel(array))
             }
             else if bytes.len() == 2 {
                 let array = bytes.try_into().unwrap();
-                Some(MidiMessage {
-                    ts,
-                    data: MidiMessageKind::ChannelSmall(array)
-                })
+                Some(MidiMessage::ChannelSmall(array))
             }
             else {
                 None
@@ -102,29 +91,22 @@ impl MidiMessage {
         }
         else if bytes[0] < 0b1111_1000 { // common message
             let v = bytes.to_vec();
-            Some(MidiMessage {
-                ts,
-                data: MidiMessageKind::SystemCommon(v)
-            })
+            Some(MidiMessage::SystemCommon(v))
         }
         else { // realtime
-            Some(MidiMessage {
-                ts,
-                data: MidiMessageKind::SystemRealtime(bytes[0])
-            })
+            Some(MidiMessage::SystemRealtime(bytes[0]))
         }
     }
     pub fn to_bytes(&self) -> Vec<u8> {
-        type MMK = MidiMessageKind;
-        if let MMK::SystemCommon(v) = &self.data {
+        if let Self::SystemCommon(v) = &self {
             v.clone()
         }
         else {
-            let mut ret = Vec::new();
-            match self.data {
-                MMK::Channel(bytes) => ret.extend(bytes),
-                MMK::ChannelSmall(bytes) => ret.extend(bytes),
-                MMK::SystemRealtime(b) => ret.push(b),
+            let mut ret: Vec<u8> = Vec::new();
+            match self {
+                Self::Channel(bytes) => ret.extend(bytes),
+                Self::ChannelSmall(bytes) => ret.extend(bytes),
+                Self::SystemRealtime(b) => ret.push(*b),
                 _ => unreachable!()
             }
             ret
@@ -133,23 +115,15 @@ impl MidiMessage {
 
     /// returns None for non-channel message. goes by midi channel number, not binary value (the lowest channel is 1)
     pub fn channel(&self) -> Option<u8> {
-        type MMK = MidiMessageKind;
-        match self.data {
-            MMK::Channel(b) => Some(b[0]),
-            MMK::ChannelSmall(b) => Some(b[0]),
+        match self {
+            Self::Channel(b) => Some(b[0]),
+            Self::ChannelSmall(b) => Some(b[0]),
             _ => None
         }.map(|b| (b & 0xf) + 1)
     }
     /// goes by midi channel number, not binary value (the lowest channel is 1)
+    
     pub fn with_channel(&self, channel: u8) -> MidiMessage {
-        assert!((1..=16).contains(&channel));
-        let mut ret = self.clone();
-        ret.data = ret.data.with_channel(channel);
-        ret
-    }
-}
-impl MidiMessageKind {
-    pub fn with_channel(self, channel: u8) -> MidiMessageKind {
         match self {
             Self::Channel(mut b) => {
                 let c_actual = channel - 1;
@@ -163,7 +137,7 @@ impl MidiMessageKind {
                 b[0] |= c_actual;
                 Self::ChannelSmall(b)
             }
-            _ => self
+            _ => self.clone()
         }
     }
 }

@@ -22,6 +22,7 @@ kwds_main = [
         "input", "output",
         "channelfilter",
         "channelmerge",
+        "dummyplayer",
     ]),
 
     (["processor_ctors", "&[fn(String, &[String]) -> crate::utils::Result<Box<dyn crate::MidiIO>>]"], [
@@ -29,7 +30,12 @@ kwds_main = [
         "crate::processors::connection::MidiOut::new_args",
         "crate::processors::channelfilter::ChannelFilter::new_args",
         "crate::processors::channelmerge::ChannelMerge::new_args",
+        "crate::processors::dummyplayer::DummyPlayer::new_args",
     ]),
+
+    ("channelfilter_cmds", [
+        "channel"
+    ])
 ]
 
 def list_to_string(l, print_quotes):
